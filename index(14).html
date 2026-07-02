@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bright Dynasty FBI — Case Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0b0d; --panel:#131519; --panel-2:#17191e; --line:#282c33;
+    --gold:#d4a017; --gold-light:#f0c862; --text:#eeeae0; --muted:#828a94;
+    --red:#a3272b; --red-light:#c94a3d; --green:#4c9a6a; --blue:#5b8dbf;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;line-height:1.5;min-height:100vh;}
+  h1,h2,h3,.display{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:0.03em;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  body::before{
+    content:"";position:fixed;inset:0;
+    background-image:repeating-linear-gradient(45deg, rgba(212,160,23,0.025) 0px, rgba(212,160,23,0.025) 1px, transparent 1px, transparent 60px);
+    pointer-events:none;z-index:0;
+  }
+  body::after{
+    content:"CONFIDENTIAL";position:fixed;top:50%;left:50%;
+    transform:translate(-50%,-50%) rotate(-32deg);
+    font-family:'Oswald',sans-serif;font-size:min(14vw,220px);font-weight:700;
+    color:rgba(212,160,23,0.02);letter-spacing:0.1em;pointer-events:none;z-index:0;white-space:nowrap;
+  }
+
+  header{position:sticky;top:0;background:rgba(10,11,13,0.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:100;}
+  .header-top{display:flex;align-items:center;justify-content:space-between;padding:16px 5%;border-bottom:1px solid var(--line);}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .badge-mark{width:36px;height:36px;border:2px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:700;color:var(--gold);font-size:14px;position:relative;flex-shrink:0;}
+  .badge-mark::after{content:"";position:absolute;inset:-6px;border:1px solid var(--gold);border-radius:50%;opacity:0.35;}
+  .logo-img{width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid var(--gold);flex-shrink:0;}
+  .sync-pill{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;padding:3px 9px;border-radius:2px;border:1px solid var(--line);color:var(--muted);}
+  .sync-pill.synced{color:var(--green);border-color:var(--green);}
+  .sync-pill.error{color:var(--red-light);border-color:var(--red);}
+  .brand-text{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:0.05em;}
+  .brand-text span{display:block;font-size:10px;color:var(--muted);letter-spacing:0.15em;font-weight:400;text-transform:uppercase;}
+  .clearance{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red-light);border:1px solid var(--red);padding:5px 12px;border-radius:2px;letter-spacing:0.15em;white-space:nowrap;}
+
+  .header-bottom{display:flex;align-items:center;justify-content:space-between;padding:0 5%;overflow-x:auto;}
+  .tabs{display:flex;flex-shrink:0;}
+  .tab-btn{background:none;border:none;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:16px 18px;cursor:pointer;border-bottom:2px solid transparent;transition:color 0.2s, border-color 0.2s;white-space:nowrap;}
+  .tab-btn:hover{color:var(--text);}
+  .tab-btn.active{color:var(--gold-light);border-color:var(--gold);}
+  .tab-count{display:inline-block;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:1px 8px;font-size:10px;margin-left:6px;color:var(--muted);}
+  .tab-btn.active .tab-count{border-color:var(--gold);color:var(--gold-light);}
+  .ticker{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.08em;flex-shrink:0;padding-left:16px;}
+
+  main{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:44px 5% 100px;}
+  .view{display:none;}
+  .view.active{display:block;animation:fadeIn 0.25s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  .view-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
+  .view-head h2{font-size:clamp(24px,3.5vw,34px);}
+  .view-head .sub{color:var(--muted);font-size:13px;font-family:'IBM Plex Mono',monospace;}
+
+  .empty-state{border:1px dashed var(--line);border-radius:4px;padding:60px 20px;text-align:center;color:var(--muted);}
+  .empty-state .mono{display:block;margin-bottom:8px;font-size:12px;letter-spacing:0.1em;}
+
+  .btn{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.05em;padding:11px 20px;border-radius:2px;border:1px solid var(--line);cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:8px;background:none;color:var(--text);}
+  .btn-primary{background:var(--gold);color:#14171c;border-color:var(--gold);font-weight:600;}
+  .btn-primary:hover{background:var(--gold-light);}
+  .btn-ghost:hover{border-color:var(--gold);color:var(--gold-light);}
+
+  /* ---- HOME ---- */
+  .intro-panel{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:2px;padding:30px;margin-bottom:16px;}
+  .intro-panel h3{font-size:18px;margin-bottom:12px;}
+  .intro-panel p{color:var(--muted);font-size:14px;margin-bottom:14px;max-width:760px;}
+  .intro-stats{display:flex;gap:0;border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-top:20px;flex-wrap:wrap;}
+  .intro-stat{padding:16px 28px;border-right:1px solid var(--line);flex:1;min-width:140px;}
+  .intro-stat:last-child{border-right:none;}
+  .intro-stat .num{font-family:'Oswald',sans-serif;font-size:24px;color:var(--gold-light);font-weight:600;}
+  .intro-stat .lbl{font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:2px;}
+  .mission-list{margin:14px 0 0 18px;color:var(--muted);font-size:13px;}
+  .mission-list li{margin-bottom:6px;}
+
+  .sub-head{display:flex;align-items:center;justify-content:space-between;margin:44px 0 20px;}
+  .sub-head h3{font-size:20px;}
+
+  /* ---- CARD GRID (roster / suspects / cases share base) ---- */
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;}
+
+  .agent-card, .suspect-card{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:20px;position:relative;transition:border-color 0.2s;}
+  .agent-card:hover, .suspect-card:hover{border-color:var(--gold);}
+  .card-top-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+  .rank-tag{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--gold);border:1px solid var(--gold);padding:3px 8px;border-radius:2px;text-transform:uppercase;}
+  .agent-card h3, .suspect-card h3{font-size:18px;margin:10px 0 4px;}
+  .badge-no{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-bottom:10px;}
+  .status-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-bottom:14px;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);}
+  .dot.away{background:var(--gold);}
+  .dot.off{background:#555;}
+
+  .status-pill{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;padding:3px 9px;border-radius:2px;text-transform:uppercase;border:1px solid;}
+  .status-pill.wanted{color:var(--red-light);border-color:var(--red);}
+  .status-pill.detained{color:var(--blue);border-color:var(--blue);}
+  .status-pill.poi{color:var(--gold-light);border-color:var(--gold);}
+  .status-pill.cleared{color:var(--green);border-color:var(--green);}
+  .threat-row{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;}
+  .suspect-desc{color:var(--muted);font-size:13px;margin-bottom:14px;}
+
+  .card-actions{display:flex;gap:8px;}
+  .mini-btn{flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.05em;padding:9px 10px;border-radius:2px;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer;transition:all 0.2s;text-align:center;}
+  .mini-btn:hover{border-color:var(--gold);color:var(--gold-light);}
+  .mini-btn.danger:hover{border-color:var(--red);color:var(--red-light);}
+
+  /* ---- CASES ---- */
+  .case-card{background:var(--panel);border:1px solid var(--line);border-radius:3px;overflow:hidden;transition:border-color 0.2s;}
+  .case-card:hover{border-color:var(--gold);}
+  .tab-strip{height:6px;background:var(--gold);}
+  .case-card.priority-high .tab-strip{background:var(--red);}
+  .case-card.priority-low .tab-strip{background:var(--muted);}
+  .case-card-body{padding:20px;}
+  .case-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+  .case-no{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--gold-light);font-weight:600;}
+  .case-date{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);}
+  .stamp{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.15em;padding:3px 10px;border:2px solid;border-radius:2px;transform:rotate(-4deg);display:inline-block;}
+  .stamp.open{color:var(--green);border-color:var(--green);}
+  .stamp.closed{color:var(--muted);border-color:var(--muted);}
+  .case-type{font-size:15px;font-weight:600;margin-bottom:6px;}
+  .case-desc{color:var(--muted);font-size:13px;margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  .case-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;padding-top:12px;border-top:1px solid var(--line);margin-bottom:14px;}
+  .case-meta b{color:var(--text);font-weight:500;}
+
+  /* ---- FILE REPORT ---- */
+  .report-wrap{display:grid;grid-template-columns:0.85fr 1.15fr;gap:36px;align-items:start;}
+  .report-note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--gold);padding:26px;border-radius:2px;}
+  .report-note h3{font-size:16px;margin-bottom:12px;}
+  .report-note p{color:var(--muted);font-size:13px;margin-bottom:12px;}
+  .report-note ul{margin-left:16px;color:var(--muted);font-size:13px;}
+  .report-note li{margin-bottom:6px;}
+  form.case-file{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:30px;}
+  .case-file .stamp-corner{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;padding-bottom:16px;border-bottom:1px dashed var(--line);}
+  .case-file .stamp-corner span{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
+
+  /* ---- FORM FIELDS (shared) ---- */
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+  .field input, .field select, .field textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:3px;padding:11px 13px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;}
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none;border-color:var(--gold);}
+  .field textarea{resize:vertical;min-height:90px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .submit-status{margin-top:14px;font-size:13px;font-family:'IBM Plex Mono',monospace;min-height:18px;}
+  .submit-status.ok{color:var(--green);}
+  .submit-status.err{color:var(--red-light);}
+
+  /* ---- MODAL ---- */
+  .modal-overlay{position:fixed;inset:0;background:rgba(6,7,8,0.75);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+  .modal-overlay.active{display:flex;}
+  .modal-box{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:4px;padding:28px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;}
+  .modal-box h3{font-size:18px;margin-bottom:20px;}
+  .modal-actions{display:flex;gap:10px;margin-top:8px;}
+  .modal-actions .btn{flex:1;justify-content:center;}
+
+  footer{padding:30px 5%;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:0.08em;position:relative;z-index:1;}
+
+  @media(max-width:820px){
+    .report-wrap{grid-template-columns:1fr;}
+    .field-row{grid-template-columns:1fr;}
+    .ticker{display:none;}
+  }
+
+  /* ---- LIGHT THEME ---- */
+  [data-theme="light"]{
+    --bg:#f2efe7; --panel:#ffffff; --panel-2:#f7f5f0; --line:#ddd7c8;
+    --text:#1c1d1f; --muted:#6b6f76;
+  }
+
+  /* ---- HEADER EXTRAS ---- */
+  .icon-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;
+    background:none;border:1px solid var(--line);color:var(--muted);
+    padding:5px 10px;border-radius:2px;cursor:pointer;transition:all 0.2s;white-space:nowrap;
+  }
+  .icon-btn:hover{border-color:var(--gold);color:var(--gold-light);}
+  .search-row{padding:12px 5%;border-top:1px solid var(--line);}
+  .search-row input{
+    width:100%;background:var(--bg);border:1px solid var(--line);border-radius:3px;
+    padding:10px 14px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;
+  }
+  .search-row input:focus{outline:none;border-color:var(--gold);}
+
+  /* ---- REDACTED MODE ---- */
+  body.redacted .redact-target{
+    filter:blur(6px);user-select:none;transition:filter 0.2s;
+  }
+  body.redacted .redact-target:hover{filter:blur(0);}
+
+  /* ---- TOOLBAR (sort/filter) ---- */
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+  .toolbar select{
+    background:var(--panel);border:1px solid var(--line);border-radius:3px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 10px;
+  }
+  .toolbar select:focus{outline:none;border-color:var(--gold);}
+
+  /* ---- STALE / ESCALATED BADGES ---- */
+  .flag-badge{
+    font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.08em;
+    color:var(--red-light);border:1px solid var(--red);border-radius:2px;
+    padding:2px 6px;margin-left:8px;white-space:nowrap;
+  }
+
+  /* ---- ASSIGN SELECT ---- */
+  .assign-select{
+    background:var(--bg);border:1px solid var(--line);border-radius:2px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:4px 6px;
+    margin-top:8px;width:100%;
+  }
+
+  /* ---- LEADERBOARD ---- */
+  .leaderboard{
+    display:flex;flex-direction:column;gap:8px;
+    background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:16px;
+    margin-bottom:24px;
+  }
+  .leaderboard-row{display:flex;align-items:center;justify-content:space-between;font-size:13px;}
+  .leaderboard-row .name{display:flex;align-items:center;gap:8px;}
+  .leaderboard-row .crown{color:var(--gold-light);}
+  .leaderboard-row .count{font-family:'IBM Plex Mono',monospace;color:var(--muted);font-size:12px;}
+
+  /* ---- ACTIVITY FEED ---- */
+  .activity-feed{
+    background:var(--panel);border:1px solid var(--line);border-radius:3px;
+    padding:16px 20px;max-height:280px;overflow-y:auto;
+  }
+  .activity-item{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);
+    padding:8px 0;border-bottom:1px solid var(--line);
+  }
+  .activity-item:last-child{border-bottom:none;}
+  .activity-item b{color:var(--text);font-weight:500;}
+  .activity-item .ts{float:right;color:var(--muted);font-size:10px;}
+
+  /* ---- RISK METER ---- */
+  .risk-meter{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin-bottom:10px;}
+  .risk-meter-fill{height:100%;border-radius:3px;}
+
+  /* ---- NOTES MODAL ---- */
+  .notes-list{max-height:240px;overflow-y:auto;margin-bottom:16px;}
+  .note-item{
+    background:var(--bg);border:1px solid var(--line);border-radius:3px;
+    padding:10px 12px;margin-bottom:8px;font-size:13px;
+  }
+  .note-item .note-meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px;}
+
+  .linked-cases-list{margin-top:10px;font-size:12px;color:var(--muted);}
+  .linked-cases-list b{color:var(--text);}
+
+  /* ---- AUTH GATE ---- */
+  #authGate{
+    position:fixed;inset:0;background:var(--bg);z-index:2000;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  #authGate.hidden{display:none;}
+  .auth-box{
+    width:100%;max-width:400px;background:var(--panel);border:1px solid var(--line);
+    border-top:3px solid var(--gold);border-radius:4px;padding:34px;
+  }
+  .auth-box .badge-mark{width:44px;height:44px;font-size:17px;margin:0 auto 16px;}
+  .auth-box h2{font-size:20px;text-align:center;margin-bottom:6px;}
+  .auth-box .auth-sub{text-align:center;color:var(--muted);font-size:12px;margin-bottom:26px;font-family:'IBM Plex Mono',monospace;letter-spacing:0.08em;}
+  .auth-tabs{display:flex;border:1px solid var(--line);border-radius:3px;margin-bottom:22px;overflow:hidden;}
+  .auth-tab{flex:1;background:none;border:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.08em;padding:10px;cursor:pointer;}
+  .auth-tab.active{background:var(--gold);color:#14171c;font-weight:600;}
+  .auth-error{color:var(--red-light);font-size:12px;font-family:'IBM Plex Mono',monospace;min-height:16px;margin-top:10px;}
+  .auth-form{display:none;}
+  .auth-form.active{display:block;}
+  .logged-in-as{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
+  .logged-in-as b{color:var(--gold-light);}
+
+  /* ---- PIN ---- */
+  .pin-btn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:2px;padding:9px 10px;cursor:pointer;font-size:13px;transition:all 0.2s;}
+  .pin-btn:hover{border-color:var(--gold);color:var(--gold-light);}
+  .pin-btn.pinned{color:var(--gold-light);border-color:var(--gold);background:rgba(212,160,23,0.1);}
+  .pinned-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--gold-light);border:1px solid var(--gold);border-radius:2px;padding:2px 6px;margin-left:8px;}
+</style>
+</head>
+<body>
+
+<div id="authGate">
+  <div class="auth-box">
+    <div class="badge-mark" style="margin-left:auto;margin-right:auto;">BD</div>
+    <h2>Bright Dynasty FBI</h2>
+    <div class="auth-sub">AGENT ACCESS REQUIRED</div>
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" id="loginTabBtn">Log In</button>
+      <button type="button" class="auth-tab" id="signupTabBtn">Sign Up</button>
+    </div>
+
+    <form class="auth-form active" id="loginForm">
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" required placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Log In</button>
+      <div class="auth-error" id="loginError"></div>
+    </form>
+
+    <form class="auth-form" id="signupForm">
+      <div class="field">
+        <label for="signupName">Your Name</label>
+        <input type="text" id="signupName" required placeholder="e.g. K. Novak">
+      </div>
+      <div class="field">
+        <label for="signupEmail">Email</label>
+        <input type="email" id="signupEmail" required placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label for="signupPassword">Password</label>
+        <input type="password" id="signupPassword" required placeholder="At least 6 characters">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Create Account</button>
+      <div class="auth-error" id="signupError"></div>
+    </form>
+  </div>
+</div>
+
+
+<header>
+  <div class="header-top">
+    <div class="brand">
+      <div class="badge-mark">BD</div>
+      <div class="brand-text">Bright Dynasty <span>Federal Bureau of Investigation Division</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="logged-in-as" id="loggedInAs"></span>
+      <span class="sync-pill" id="syncPill">CONNECTING…</span>
+      <button class="icon-btn" id="redactToggle" title="Toggle redacted mode">REDACT</button>
+      <button class="icon-btn" id="themeToggle" title="Toggle light/dark">THEME</button>
+      <button class="icon-btn" id="logoutBtn" title="Log out">LOGOUT</button>
+      <div class="clearance">AGENT ACCESS ONLY</div>
+    </div>
+  </div>
+  <div class="header-bottom">
+    <div class="tabs" id="tabs">
+      <button class="tab-btn active" data-view="home">Home</button>
+      <button class="tab-btn" data-view="open">Open Cases <span class="tab-count" id="countOpen">0</span></button>
+      <button class="tab-btn" data-view="closed">Closed Cases <span class="tab-count" id="countClosed">0</span></button>
+      <button class="tab-btn" data-view="suspects">Suspects <span class="tab-count" id="countSuspects">0</span></button>
+      <button class="tab-btn" data-view="file">File Report</button>
+    </div>
+    <div class="ticker mono" id="ticker">SYSTEM ONLINE</div>
+  </div>
+  <div class="search-row">
+    <input type="text" id="globalSearch" class="mono" placeholder="Search agents, cases, suspects... (press / to focus)">
+  </div>
+</header>
+
+<main>
+
+  <!-- HOME -->
+  <div class="view active" id="view-home">
+    <div class="view-head">
+      <h2>Division Overview</h2>
+      <div class="sub mono">CLASSIFICATION: INTERNAL</div>
+    </div>
+
+    <div class="intro-panel">
+      <h3>About the Division</h3>
+      <p>The Bright Dynasty FBI Division is the investigative and enforcement branch of the Bright Dynasty community. Agents monitor for rule violations, harassment, cheating, and impersonation, and respond to reports filed by any member.</p>
+      <ul class="mission-list">
+        <li>Investigate and resolve community reports fairly and quickly.</li>
+        <li>Track known suspects and repeat offenders.</li>
+        <li>Support staff with evidence review and case documentation.</li>
+        <li>Keep the community a safe, trustworthy place to play.</li>
+      </ul>
+      <div class="intro-stats">
+        <div class="intro-stat"><div class="num" id="statAgents">0</div><div class="lbl">Active Agents</div></div>
+        <div class="intro-stat"><div class="num" id="statOpen">0</div><div class="lbl">Open Cases</div></div>
+        <div class="intro-stat"><div class="num" id="statSuspects">0</div><div class="lbl">Tracked Suspects</div></div>
+      </div>
+    </div>
+
+    <div class="sub-head">
+      <h3>Agent Roster</h3>
+      <button class="btn btn-primary" onclick="openAgentModal()">+ Add Agent</button>
+    </div>
+    <div class="card-grid" id="rosterGrid"></div>
+    <div class="empty-state" id="rosterEmpty" style="display:none;">
+      <span class="mono">NO AGENTS ON FILE</span>
+      Add your first agent to the roster.
+    </div>
+
+    <div class="sub-head">
+      <h3>Top Agents — Cases Closed</h3>
+      <button class="btn btn-ghost" onclick="exportRosterCSV()">Export Roster CSV</button>
+    </div>
+    <div class="leaderboard" id="leaderboard"></div>
+
+    <div class="sub-head">
+      <h3>Recent Activity</h3>
+    </div>
+    <div class="activity-feed" id="activityFeed"></div>
+  </div>
+
+  <!-- OPEN CASES -->
+  <div class="view" id="view-open">
+    <div class="view-head">
+      <h2>Open Cases</h2>
+      <div class="sub mono">ACTIVE INVESTIGATIONS</div>
+    </div>
+    <div class="toolbar">
+      <select id="openSortBy">
+        <option value="newest">Sort: Newest First</option>
+        <option value="oldest">Sort: Oldest First</option>
+        <option value="priority">Sort: Priority (High→Low)</option>
+        <option value="agent">Sort: Assigned Agent</option>
+      </select>
+      <select id="openFilterPriority">
+        <option value="all">Priority: All</option>
+        <option value="High">Priority: High</option>
+        <option value="Medium">Priority: Medium</option>
+        <option value="Low">Priority: Low</option>
+      </select>
+      <select id="openFilterAgent">
+        <option value="all">Agent: All</option>
+      </select>
+      <button class="btn btn-ghost" onclick="exportCasesCSV('open')">Export CSV</button>
+    </div>
+    <div class="card-grid" id="openGrid"></div>
+    <div class="empty-state" id="openEmpty" style="display:none;">
+      <span class="mono">NO OPEN CASES</span>
+      All clear. File a report to open a new case.
+    </div>
+  </div>
+
+  <!-- CLOSED CASES -->
+  <div class="view" id="view-closed">
+    <div class="view-head">
+      <h2>Closed Cases</h2>
+      <div class="sub mono">RESOLVED / ARCHIVED</div>
+    </div>
+    <div class="toolbar">
+      <select id="closedSortBy">
+        <option value="newest">Sort: Newest First</option>
+        <option value="oldest">Sort: Oldest First</option>
+        <option value="priority">Sort: Priority (High→Low)</option>
+        <option value="agent">Sort: Assigned Agent</option>
+      </select>
+      <select id="closedFilterPriority">
+        <option value="all">Priority: All</option>
+        <option value="High">Priority: High</option>
+        <option value="Medium">Priority: Medium</option>
+        <option value="Low">Priority: Low</option>
+      </select>
+      <button class="btn btn-ghost" onclick="exportCasesCSV('closed')">Export CSV</button>
+    </div>
+    <div class="card-grid" id="closedGrid"></div>
+    <div class="empty-state" id="closedEmpty" style="display:none;">
+      <span class="mono">NO CLOSED CASES</span>
+      Resolved cases will appear here.
+    </div>
+  </div>
+
+  <!-- SUSPECTS -->
+  <div class="view" id="view-suspects">
+    <div class="view-head">
+      <h2>Suspects</h2>
+      <div class="sub mono">PERSONS OF INTEREST</div>
+    </div>
+    <div class="sub-head" style="margin-top:0;margin-bottom:24px;">
+      <div></div>
+      <button class="btn btn-primary" onclick="openSuspectModal()">+ Add Suspect</button>
+    </div>
+    <div class="card-grid" id="suspectsGrid"></div>
+    <div class="empty-state" id="suspectsEmpty" style="display:none;">
+      <span class="mono">NO SUSPECTS ON FILE</span>
+      Add a suspect to start tracking them.
+    </div>
+  </div>
+
+  <!-- FILE REPORT -->
+  <div class="view" id="view-file">
+    <div class="view-head">
+      <h2>File Report</h2>
+      <div class="sub mono">NEW CASE INTAKE</div>
+    </div>
+    <div class="report-wrap">
+      <div class="report-note">
+        <h3>Filing guidelines</h3>
+        <p>This opens a new case in the system. Fill it out like you're briefing another agent — assume they know nothing yet.</p>
+        <ul>
+          <li>Use usernames, not nicknames.</li>
+          <li>Attach evidence links whenever you have them.</li>
+          <li>Mark High priority only for active/urgent issues.</li>
+          <li>The case gets a number automatically — track it in Open Cases.</li>
+        </ul>
+      </div>
+      <form class="case-file" id="reportForm">
+        <div class="stamp-corner">
+          <span>CASE INTAKE FORM</span>
+          <span id="caseNoPreview" class="mono">CASE #—</span>
+        </div>
+        <div class="field">
+          <label for="reporter">Filing Agent</label>
+          <input type="text" id="reporter" required placeholder="Your username">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="incidentType">Case Type</label>
+            <select id="incidentType"></select>
+          </div>
+          <div class="field">
+            <label for="priority">Priority</label>
+            <select id="priority">
+              <option>Low</option>
+              <option selected>Medium</option>
+              <option>High</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin:-10px 0 18px;">
+          <button type="button" class="mini-btn" style="width:auto;padding:6px 12px;display:inline-flex;" onclick="addCaseType()">+ Add Custom Case Type</button>
+        </div>
+        <div class="field">
+          <label for="involved">Subject(s) Involved</label>
+          <input type="text" id="involved" placeholder="Usernames, comma separated">
+        </div>
+        <div class="field">
+          <label for="assignedTo">Assign To</label>
+          <div style="display:flex;gap:8px;">
+            <select id="assignedTo" style="flex:1;">
+              <option value="">Unassigned</option>
+            </select>
+            <button type="button" class="btn btn-ghost" onclick="randomAssign()">Random</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="description">Case Details</label>
+          <textarea id="description" required placeholder="What happened, when, and where"></textarea>
+        </div>
+        <div class="field">
+          <label for="evidence">Evidence Link (optional)</label>
+          <input type="url" id="evidence" placeholder="Clip, screenshot, or Discord message link">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Open Case</button>
+        <div class="submit-status" id="submitStatus"></div>
+      </form>
+    </div>
+  </div>
+
+</main>
+
+<footer>BRIGHT DYNASTY FBI DIVISION — CASE MANAGEMENT SYSTEM — INTERNAL USE ONLY</footer>
+
+<!-- AGENT MODAL -->
+<div class="modal-overlay" id="agentModalOverlay">
+  <div class="modal-box">
+    <h3 id="agentModalTitle">Add Agent</h3>
+    <form id="agentForm">
+      <input type="hidden" id="agentId">
+      <div class="field">
+        <label for="agentName">Name / Codename</label>
+        <input type="text" id="agentName" required placeholder="e.g. J. Carter">
+      </div>
+      <div class="field">
+        <label for="agentRank">Rank</label>
+        <select id="agentRank">
+          <option>Cheif Of FBI</option>
+          <option>Senior Agent</option>
+          <option>Agent</option>
+          <option>Trainee Agent</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="agentBadge">Badge No.</label>
+          <input type="text" id="agentBadge" placeholder="BD-001">
+        </div>
+        <div class="field">
+          <label for="agentStatus">Status</label>
+          <select id="agentStatus">
+            <option value="online">On Duty</option>
+            <option value="away">On Call</option>
+            <option value="off">Off Duty</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeAgentModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Agent</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- SUSPECT MODAL -->
+<div class="modal-overlay" id="suspectModalOverlay">
+  <div class="modal-box">
+    <h3 id="suspectModalTitle">Add Suspect</h3>
+    <form id="suspectForm">
+      <input type="hidden" id="suspectId">
+      <div class="field">
+        <label for="suspectName">Name / Alias</label>
+        <input type="text" id="suspectName" required placeholder="e.g. unknown_player22">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="suspectStatus">Status</label>
+          <select id="suspectStatus">
+            <option value="wanted">Wanted</option>
+            <option value="detained">Detained</option>
+            <option value="poi">Person of Interest</option>
+            <option value="cleared">Cleared</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="suspectThreat">Threat Level</label>
+          <select id="suspectThreat">
+            <option>Low</option>
+            <option selected>Medium</option>
+            <option>High</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="suspectLastSeen">Last Seen</label>
+        <input type="text" id="suspectLastSeen" placeholder="e.g. Ranked lobby, June 28">
+      </div>
+      <div class="field">
+        <label for="suspectDesc">Notes</label>
+        <textarea id="suspectDesc" placeholder="Behavior, linked cases, identifying details"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeSuspectModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Suspect</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- NOTES MODAL -->
+<div class="modal-overlay" id="notesModalOverlay">
+  <div class="modal-box">
+    <h3 id="notesModalTitle">Case Notes</h3>
+    <div class="notes-list" id="notesList"></div>
+    <div class="field">
+      <label for="noteAuthor">Your Name</label>
+      <input type="text" id="noteAuthor" placeholder="Agent name">
+    </div>
+    <div class="field">
+      <label for="noteText">Add Note</label>
+      <textarea id="noteText" placeholder="Update, evidence found, next steps..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeNotesModal()">Close</button>
+      <button type="button" class="btn btn-primary" onclick="submitNote()">Add Note</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+  import {
+    getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+    onSnapshot, query, orderBy, limit
+  } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+  import {
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword,
+    createUserWithEmailAndPassword, updateProfile, signOut
+  } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+  // ---- Your Firebase project ----
+  const firebaseConfig = {
+    apiKey: "AIzaSyCG0xhsZ_A1kDJw_Rna5k1e2L2PRLbpoBw",
+    authDomain: "bright-dynasty-fbi.firebaseapp.com",
+    projectId: "bright-dynasty-fbi",
+    storageBucket: "bright-dynasty-fbi.firebasestorage.app",
+    messagingSenderId: "212338844741",
+    appId: "1:212338844741:web:ab78da4cc2b3c741e4af2c"
+  };
+
+  // ---- EDIT THIS: paste your Discord webhook URL to also send new cases to Discord ----
+  const DISCORD_WEBHOOK_URL = ""; // e.g. "https://discord.com/api/webhooks/xxxx/yyyy"
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const agentsCol = collection(db, "agents");
+  const casesCol = collection(db, "cases");
+  const suspectsCol = collection(db, "suspects");
+  const activityCol = collection(db, "activity");
+  const caseTypesCol = collection(db, "caseTypes");
+
+  let agents = [];
+  let cases = [];
+  let suspects = [];
+  let activity = [];
+  let caseTypes = ["Rule Violation","Harassment","Cheating / Exploiting","Impersonation","Other"];
+  let searchQuery = "";
+  let currentUser = null;
+  let listenersStarted = false;
+  const escalatedSeen = new Set();
+
+  // ================= AUTH =================
+  const loginTabBtn = document.getElementById('loginTabBtn');
+  const signupTabBtn = document.getElementById('signupTabBtn');
+  const loginForm = document.getElementById('loginForm');
+  const signupForm = document.getElementById('signupForm');
+
+  loginTabBtn.addEventListener('click', ()=>{
+    loginTabBtn.classList.add('active'); signupTabBtn.classList.remove('active');
+    loginForm.classList.add('active'); signupForm.classList.remove('active');
+  });
+  signupTabBtn.addEventListener('click', ()=>{
+    signupTabBtn.classList.add('active'); loginTabBtn.classList.remove('active');
+    signupForm.classList.add('active'); loginForm.classList.remove('active');
+  });
+
+  loginForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = "";
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    try{
+      await signInWithEmailAndPassword(auth, email, password);
+    }catch(err){
+      errEl.textContent = friendlyAuthError(err);
+    }
+  });
+
+  signupForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    const errEl = document.getElementById('signupError');
+    errEl.textContent = "";
+    const name = document.getElementById('signupName').value;
+    const email = document.getElementById('signupEmail').value;
+    const password = document.getElementById('signupPassword').value;
+    try{
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(cred.user, { displayName: name });
+      logActivity(`New agent account created: ${name}`);
+    }catch(err){
+      errEl.textContent = friendlyAuthError(err);
+    }
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', ()=>{
+    if(confirm("Log out of the FBI system?")) signOut(auth);
+  });
+
+  function friendlyAuthError(err){
+    const code = err.code || "";
+    if(code.includes('user-not-found') || code.includes('wrong-password') || code.includes('invalid-credential')) return "Incorrect email or password.";
+    if(code.includes('email-already-in-use')) return "That email already has an account — try logging in instead.";
+    if(code.includes('weak-password')) return "Password must be at least 6 characters.";
+    if(code.includes('invalid-email')) return "That doesn't look like a valid email.";
+    return err.message || "Something went wrong. Try again.";
+  }
+
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    const gate = document.getElementById('authGate');
+    if(user){
+      gate.classList.add('hidden');
+      document.getElementById('loggedInAs').innerHTML = `Logged in as <b>${esc(user.displayName || user.email)}</b>`;
+      const reporterEl = document.getElementById('reporter');
+      if(reporterEl && !reporterEl.value) reporterEl.value = user.displayName || user.email;
+      if(!listenersStarted){ listenersStarted = true; startListeners(); }
+    } else {
+      gate.classList.remove('hidden');
+      document.getElementById('loggedInAs').textContent = "";
+    }
+  });
+
+  // ================= HELPERS =================
+  function setSyncPill(state){
+    const pill = document.getElementById('syncPill');
+    if(state === 'ok'){ pill.textContent = "SYNCED — LIVE"; pill.className = "sync-pill synced"; }
+    else if(state === 'error'){ pill.textContent = "CONNECTION ERROR"; pill.className = "sync-pill error"; }
+    else { pill.textContent = "CONNECTING…"; pill.className = "sync-pill"; }
+  }
+
+  function genCaseNo(){ const n = Math.floor(1000 + Math.random()*8999); return "BD-" + new Date().getFullYear() + "-" + n; }
+  function esc(str){ return (str || "").toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  function daysSince(dateStr){
+    if(!dateStr) return 0;
+    const d = new Date(dateStr);
+    return Math.floor((Date.now() - d.getTime()) / 86400000);
+  }
+
+  // ================= ACTIVITY LOG =================
+  async function logActivity(text){
+    try{ await addDoc(activityCol, { text, ts: new Date().toISOString() }); }
+    catch(err){ console.error("Activity log failed:", err); }
+  }
+
+  function renderActivity(){
+    const feed = document.getElementById('activityFeed');
+    if(!activity.length){ feed.innerHTML = `<div class="activity-item">No activity yet.</div>`; return; }
+    const sorted = [...activity].sort((a,b) => new Date(b.ts) - new Date(a.ts)).slice(0, 30);
+    feed.innerHTML = sorted.map(a => {
+      const t = new Date(a.ts);
+      const timeStr = isNaN(t) ? '' : t.toLocaleString();
+      return `<div class="activity-item">${esc(a.text)}<span class="ts">${timeStr}</span></div>`;
+    }).join('');
+  }
+
+  // ================= SOUND =================
+  function playChime(){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(660, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + 0.3);
+    }catch(err){}
+  }
+
+  // ================= THEME + REDACT =================
+  function initTheme(){
+    const saved = localStorage.getItem('bd_theme') || 'dark';
+    if(saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  }
+  document.getElementById('themeToggle').addEventListener('click', ()=>{
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    if(isLight){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('bd_theme','dark'); }
+    else{ document.documentElement.setAttribute('data-theme','light'); localStorage.setItem('bd_theme','light'); }
+  });
+  document.getElementById('redactToggle').addEventListener('click', ()=>{
+    document.body.classList.toggle('redacted');
+  });
+  initTheme();
+
+  // ================= SEARCH + SHORTCUTS =================
+  document.getElementById('globalSearch').addEventListener('input', (e)=>{
+    searchQuery = e.target.value.trim().toLowerCase();
+    renderRoster(); renderCases(); renderSuspects();
+  });
+  document.addEventListener('keydown', e=>{
+    const inField = document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA';
+    if(e.key === '/' && !inField){ e.preventDefault(); document.getElementById('globalSearch').focus(); }
+    if((e.key === 'n' || e.key === 'N') && !inField){ document.querySelector('[data-view="file"]').click(); }
+  });
+
+  // ================= CASE TYPES =================
+  function populateCaseTypeSelect(){
+    const sel = document.getElementById('incidentType');
+    const cur = sel.value;
+    sel.innerHTML = caseTypes.map(t => `<option>${esc(t)}</option>`).join('');
+    if(caseTypes.includes(cur)) sel.value = cur;
+  }
+  window.addCaseType = async function(){
+    const name = prompt("New case type name:");
+    if(!name || !name.trim()) return;
+    const trimmed = name.trim();
+    if(caseTypes.includes(trimmed)){ document.getElementById('incidentType').value = trimmed; return; }
+    try{
+      await addDoc(caseTypesCol, { name: trimmed });
+      logActivity(`New case type added: ${trimmed}`);
+    }catch(err){ alert("Couldn't add case type: " + err.message); }
+  };
+
+  // ================= ROSTER =================
+  const statusLabel = { online:"On Duty", away:"On Call", off:"Off Duty" };
+  const statusDotClass = { online:"", away:"away", off:"off" };
+
+  function renderRoster(){
+    const grid = document.getElementById('rosterGrid');
+    const filtered = agents.filter(a => !searchQuery || (a.name||'').toLowerCase().includes(searchQuery) || (a.rank||'').toLowerCase().includes(searchQuery) || (a.badge||'').toLowerCase().includes(searchQuery));
+    grid.innerHTML = filtered.map(a => `
+      <div class="agent-card">
+        <div class="card-top-row">
+          <span class="rank-tag">${esc(a.rank)}</span>
+        </div>
+        <h3 class="redact-target">${esc(a.name)}</h3>
+        <div class="badge-no mono">Badge ${esc(a.badge) || '—'}</div>
+        <div class="status-row"><span class="dot ${statusDotClass[a.status]}"></span>${statusLabel[a.status]}</div>
+        <div class="card-actions">
+          <button class="mini-btn" onclick="editAgent('${a.id}')">Edit</button>
+          <button class="mini-btn danger" onclick="deleteAgent('${a.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+    document.getElementById('rosterEmpty').style.display = filtered.length ? 'none' : 'block';
+    document.getElementById('statAgents').textContent = agents.length;
+    populateAssignDropdowns();
+    renderLeaderboard();
+  }
+
+  function populateAssignDropdowns(){
+    const opts = ['<option value="">Unassigned</option>'].concat(
+      agents.map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`)
+    ).join('');
+    const assignedTo = document.getElementById('assignedTo');
+    if(assignedTo){ const cur = assignedTo.value; assignedTo.innerHTML = opts; assignedTo.value = cur; }
+    const filterAgent = document.getElementById('openFilterAgent');
+    if(filterAgent){
+      const cur = filterAgent.value;
+      filterAgent.innerHTML = '<option value="all">Agent: All</option>' + agents.map(a=>`<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
+      filterAgent.value = cur;
+    }
+  }
+
+  window.randomAssign = function(){
+    const onDuty = agents.filter(a => a.status === 'online');
+    const pool = onDuty.length ? onDuty : agents;
+    if(!pool.length){ alert("No agents on the roster yet."); return; }
+    const pick = pool[Math.floor(Math.random()*pool.length)];
+    document.getElementById('assignedTo').value = pick.name;
+  };
+
+  function renderLeaderboard(){
+    const counts = {};
+    cases.forEach(c => { if(c.status === 'closed' && c.assignedTo) counts[c.assignedTo] = (counts[c.assignedTo] || 0) + 1; });
+    const ranked = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const board = document.getElementById('leaderboard');
+    if(!ranked.length){ board.innerHTML = `<div class="leaderboard-row"><span class="name">No closed cases assigned yet.</span></div>`; return; }
+    board.innerHTML = ranked.map(([name,count],i) => `
+      <div class="leaderboard-row">
+        <span class="name">${i===0 ? '<span class="crown">★</span>' : ''} ${esc(name)} ${i===0 ? '<span class="flag-badge" style="color:var(--gold-light);border-color:var(--gold);">AGENT OF THE MONTH</span>' : ''}</span>
+        <span class="count">${count} closed</span>
+      </div>
+    `).join('');
+  }
+
+  window.openAgentModal = function(){
+    document.getElementById('agentModalTitle').textContent = "Add Agent";
+    document.getElementById('agentForm').reset();
+    document.getElementById('agentId').value = "";
+    document.getElementById('agentModalOverlay').classList.add('active');
+  };
+  window.closeAgentModal = function(){ document.getElementById('agentModalOverlay').classList.remove('active'); };
+  window.editAgent = function(id){
+    const a = agents.find(x=>x.id===id); if(!a) return;
+    document.getElementById('agentModalTitle').textContent = "Edit Agent";
+    document.getElementById('agentId').value = a.id;
+    document.getElementById('agentName').value = a.name;
+    document.getElementById('agentRank').value = a.rank;
+    document.getElementById('agentBadge').value = a.badge;
+    document.getElementById('agentStatus').value = a.status;
+    document.getElementById('agentModalOverlay').classList.add('active');
+  };
+  window.deleteAgent = async function(id){
+    if(!confirm("Remove this agent from the roster?")) return;
+    const a = agents.find(x=>x.id===id);
+    try{ await deleteDoc(doc(db, "agents", id)); logActivity(`Agent removed: ${a ? a.name : id}`); }
+    catch(err){ alert("Couldn't delete agent: " + err.message); }
+  };
+  document.getElementById('agentForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const id = document.getElementById('agentId').value;
+    const data = {
+      name: document.getElementById('agentName').value,
+      rank: document.getElementById('agentRank').value,
+      badge: document.getElementById('agentBadge').value,
+      status: document.getElementById('agentStatus').value,
+    };
+    try{
+      if(id){ await updateDoc(doc(db, "agents", id), data); logActivity(`Agent updated: ${data.name}`); }
+      else { await addDoc(agentsCol, data); logActivity(`New agent added: ${data.name}`); }
+      closeAgentModal();
+    }catch(err){ alert("Couldn't save agent: " + err.message); }
+  });
+
+  window.exportRosterCSV = function(){
+    const rows = [["Name","Rank","Badge","Status"]];
+    agents.forEach(a => rows.push([a.name, a.rank, a.badge, statusLabel[a.status]]));
+    downloadCSV(rows, "bright-dynasty-roster.csv");
+  };
+
+  // ================= SUSPECTS =================
+  const suspectStatusLabel = { wanted:"Wanted", detained:"Detained", poi:"Person of Interest", cleared:"Cleared" };
+  const suspectStatusClass = { wanted:"wanted", detained:"detained", poi:"poi", cleared:"cleared" };
+  const threatWeight = { Low:1, Medium:2, High:3 };
+
+  function linkedCasesFor(suspectName){
+    const nameLower = (suspectName || '').toLowerCase();
+    if(!nameLower) return [];
+    return cases.filter(c => (c.involved || '').toLowerCase().includes(nameLower));
+  }
+  function riskScore(s){
+    const linked = linkedCasesFor(s.name).filter(c => c.status === 'open').length;
+    return Math.min(100, (threatWeight[s.threat] || 1) * 15 + linked * 20);
+  }
+
+  function renderSuspects(){
+    const grid = document.getElementById('suspectsGrid');
+    const filtered = suspects.filter(s => !searchQuery || (s.name||'').toLowerCase().includes(searchQuery) || (s.desc||'').toLowerCase().includes(searchQuery));
+    grid.innerHTML = filtered.map(s => {
+      const linked = linkedCasesFor(s.name);
+      const score = riskScore(s);
+      const scoreColor = score >= 66 ? 'var(--red)' : score >= 33 ? 'var(--gold)' : 'var(--green)';
+      return `
+      <div class="suspect-card">
+        <div class="card-top-row">
+          <span class="status-pill ${suspectStatusClass[s.status]}">${suspectStatusLabel[s.status]}</span>
+        </div>
+        <h3 class="redact-target">${esc(s.name)}</h3>
+        <div class="threat-row">THREAT LEVEL: <b style="color:var(--text)">${esc(s.threat)}</b></div>
+        <div class="risk-meter"><div class="risk-meter-fill" style="width:${score}%;background:${scoreColor};"></div></div>
+        <div class="badge-no mono" style="margin-bottom:8px;">Last seen: ${esc(s.lastSeen) || '—'}</div>
+        <div class="suspect-desc">${esc(s.desc) || 'No notes on file.'}</div>
+        ${linked.length ? `<div class="linked-cases-list"><b>${linked.length} linked case${linked.length>1?'s':''}:</b> ${linked.map(c=>c.caseNo).join(', ')}</div>` : ''}
+        <div class="card-actions" style="margin-top:12px;">
+          <button class="mini-btn" onclick="editSuspect('${s.id}')">Edit</button>
+          <button class="mini-btn danger" onclick="deleteSuspect('${s.id}')">Delete</button>
+        </div>
+      </div>
+    `;}).join('');
+    document.getElementById('suspectsEmpty').style.display = filtered.length ? 'none' : 'block';
+    document.getElementById('countSuspects').textContent = suspects.length;
+    document.getElementById('statSuspects').textContent = suspects.length;
+  }
+
+  window.openSuspectModal = function(){
+    document.getElementById('suspectModalTitle').textContent = "Add Suspect";
+    document.getElementById('suspectForm').reset();
+    document.getElementById('suspectId').value = "";
+    document.getElementById('suspectModalOverlay').classList.add('active');
+  };
+  window.closeSuspectModal = function(){ document.getElementById('suspectModalOverlay').classList.remove('active'); };
+  window.editSuspect = function(id){
+    const s = suspects.find(x=>x.id===id); if(!s) return;
+    document.getElementById('suspectModalTitle').textContent = "Edit Suspect";
+    document.getElementById('suspectId').value = s.id;
+    document.getElementById('suspectName').value = s.name;
+    document.getElementById('suspectStatus').value = s.status;
+    document.getElementById('suspectThreat').value = s.threat;
+    document.getElementById('suspectLastSeen').value = s.lastSeen;
+    document.getElementById('suspectDesc').value = s.desc;
+    document.getElementById('suspectModalOverlay').classList.add('active');
+  };
+  window.deleteSuspect = async function(id){
+    if(!confirm("Remove this suspect from the tracker?")) return;
+    const s = suspects.find(x=>x.id===id);
+    try{ await deleteDoc(doc(db, "suspects", id)); logActivity(`Suspect removed: ${s ? s.name : id}`); }
+    catch(err){ alert("Couldn't delete suspect: " + err.message); }
+  };
+  document.getElementById('suspectForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const id = document.getElementById('suspectId').value;
+    const data = {
+      name: document.getElementById('suspectName').value,
+      status: document.getElementById('suspectStatus').value,
+      threat: document.getElementById('suspectThreat').value,
+      lastSeen: document.getElementById('suspectLastSeen').value,
+      desc: document.getElementById('suspectDesc').value,
+    };
+    try{
+      if(id){ await updateDoc(doc(db, "suspects", id), data); logActivity(`Suspect updated: ${data.name}`); }
+      else { await addDoc(suspectsCol, data); logActivity(`New suspect tracked: ${data.name}`); }
+      closeSuspectModal();
+    }catch(err){ alert("Couldn't save suspect: " + err.message); }
+  });
+
+  // ================= CASES =================
+  function renderCaseCard(c){
+    const priorityClass = c.priority === "High" ? "priority-high" : c.priority === "Low" ? "priority-low" : "";
+    const stampClass = c.status === "open" ? "open" : "closed";
+    const stampText = c.status === "open" ? "OPEN" : "CLOSED";
+    const actionBtn = c.status === "open"
+      ? `<button class="mini-btn" onclick="closeCase('${c.id}')">Mark Closed</button>`
+      : `<button class="mini-btn" onclick="reopenCase('${c.id}')">Reopen</button>`;
+    const stale = c.status === 'open' && daysSince(c.date) > 3;
+    const noteCount = (c.notes || []).length;
+    const agentOptions = ['<option value="">Unassigned</option>'].concat(
+      agents.map(a => `<option value="${esc(a.name)}" ${a.name===c.assignedTo?'selected':''}>${esc(a.name)}</option>`)
+    ).join('');
+    return `
+      <div class="case-card ${priorityClass}">
+        <div class="tab-strip"></div>
+        <div class="case-card-body">
+          <div class="case-top">
+            <div>
+              <div class="case-no">${c.caseNo}${c.pinned ? '<span class="pinned-tag">📌 PINNED</span>' : ''}${stale ? '<span class="flag-badge">⚠ STALE</span>' : ''}${c.autoEscalated ? '<span class="flag-badge">AUTO-ESCALATED</span>' : ''}</div>
+              <div class="case-date">${c.date}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button class="pin-btn ${c.pinned?'pinned':''}" onclick="togglePin('${c.id}', ${!c.pinned})" title="Pin this case">📌</button>
+              <div class="stamp ${stampClass}">${stampText}</div>
+            </div>
+          </div>
+          <div class="case-type">${esc(c.type)}</div>
+          <div class="case-desc">${esc(c.description)}</div>
+          <div class="case-meta">
+            <span>PRIORITY: <b>${c.priority}</b></span>
+            <span>FILED BY: <b class="redact-target">${esc(c.reporter) || '—'}</b></span>
+            <span>SUBJECT: <b class="redact-target">${esc(c.involved) || '—'}</b></span>
+          </div>
+          <select class="assign-select" onchange="reassignCase('${c.id}', this.value)">${agentOptions}</select>
+          <div class="card-actions" style="margin-top:10px;">
+            ${actionBtn}
+            <button class="mini-btn" onclick="openNotesModal('${c.id}')">Notes (${noteCount})</button>
+            <button class="mini-btn danger" onclick="deleteCase('${c.id}')">Delete</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  window.togglePin = async function(id, pinned){
+    try{ await updateDoc(doc(db, "cases", id), { pinned }); }
+    catch(err){ alert("Couldn't pin case: " + err.message); }
+  };
+
+  function applyCaseFilters(list, prefix){
+    const sortBy = document.getElementById(prefix+'SortBy')?.value || 'newest';
+    const filterPriority = document.getElementById(prefix+'FilterPriority')?.value || 'all';
+    const filterAgentEl = document.getElementById(prefix+'FilterAgent');
+    const filterAgent = filterAgentEl ? filterAgentEl.value : 'all';
+
+    let out = [...list];
+    if(filterPriority !== 'all') out = out.filter(c => c.priority === filterPriority);
+    if(filterAgent && filterAgent !== 'all') out = out.filter(c => c.assignedTo === filterAgent);
+    if(searchQuery){
+      out = out.filter(c =>
+        (c.caseNo||'').toLowerCase().includes(searchQuery) ||
+        (c.involved||'').toLowerCase().includes(searchQuery) ||
+        (c.reporter||'').toLowerCase().includes(searchQuery) ||
+        (c.type||'').toLowerCase().includes(searchQuery) ||
+        (c.description||'').toLowerCase().includes(searchQuery)
+      );
+    }
+    const priorityRank = { High:3, Medium:2, Low:1 };
+    if(sortBy === 'newest') out.sort((a,b) => new Date(b.date) - new Date(a.date));
+    else if(sortBy === 'oldest') out.sort((a,b) => new Date(a.date) - new Date(b.date));
+    else if(sortBy === 'priority') out.sort((a,b) => (priorityRank[b.priority]||0) - (priorityRank[a.priority]||0));
+    else if(sortBy === 'agent') out.sort((a,b) => (a.assignedTo||'').localeCompare(b.assignedTo||''));
+
+    const pinned = out.filter(c => c.pinned);
+    const rest = out.filter(c => !c.pinned);
+    return [...pinned, ...rest];
+  }
+
+  async function checkAutoEscalation(list){
+    for(const c of list){
+      if(c.status === 'open' && c.priority === 'Medium' && !c.autoEscalated && daysSince(c.date) > 7 && !escalatedSeen.has(c.id)){
+        escalatedSeen.add(c.id);
+        try{ await updateDoc(doc(db, "cases", c.id), { priority: 'High', autoEscalated: true }); logActivity(`Case auto-escalated to High: ${c.caseNo}`); }
+        catch(err){ console.error("Auto-escalation failed:", err); }
+      }
+    }
+  }
+
+  function renderCases(){
+    const open = cases.filter(c=>c.status==="open");
+    const closed = cases.filter(c=>c.status==="closed");
+    checkAutoEscalation(open);
+    const openFiltered = applyCaseFilters(open, 'open');
+    const closedFiltered = applyCaseFilters(closed, 'closed');
+    document.getElementById('openGrid').innerHTML = openFiltered.map(renderCaseCard).join('');
+    document.getElementById('closedGrid').innerHTML = closedFiltered.map(renderCaseCard).join('');
+    document.getElementById('openEmpty').style.display = openFiltered.length ? 'none' : 'block';
+    document.getElementById('closedEmpty').style.display = closedFiltered.length ? 'none' : 'block';
+    document.getElementById('countOpen').textContent = open.length;
+    document.getElementById('countClosed').textContent = closed.length;
+    document.getElementById('statOpen').textContent = open.length;
+    document.getElementById('ticker').textContent = `${open.length} OPEN · ${closed.length} CLOSED · ${suspects.length} TRACKED`;
+    renderSuspects();
+    renderLeaderboard();
+  }
+
+  ['openSortBy','openFilterPriority','openFilterAgent','closedSortBy','closedFilterPriority'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('change', renderCases);
+  });
+
+  window.reassignCase = async function(id, agentName){
+    try{ await updateDoc(doc(db, "cases", id), { assignedTo: agentName }); logActivity(`Case ${id} reassigned to ${agentName || 'Unassigned'}`); }
+    catch(err){ alert("Couldn't reassign case: " + err.message); }
+  };
+  window.closeCase = async function(id){
+    const c = cases.find(x=>x.id===id);
+    try{ await updateDoc(doc(db, "cases", id), { status:"closed" }); logActivity(`Case closed: ${c ? c.caseNo : id}`); }
+    catch(err){ alert("Couldn't close case: " + err.message); }
+  };
+  window.reopenCase = async function(id){
+    const c = cases.find(x=>x.id===id);
+    try{ await updateDoc(doc(db, "cases", id), { status:"open" }); logActivity(`Case reopened: ${c ? c.caseNo : id}`); }
+    catch(err){ alert("Couldn't reopen case: " + err.message); }
+  };
+  window.deleteCase = async function(id){
+    if(!confirm("Delete this case? This can't be undone.")) return;
+    const c = cases.find(x=>x.id===id);
+    try{ await deleteDoc(doc(db, "cases", id)); logActivity(`Case deleted: ${c ? c.caseNo : id}`); }
+    catch(err){ alert("Couldn't delete case: " + err.message); }
+  };
+
+  window.exportCasesCSV = function(which){
+    const list = cases.filter(c => c.status === which);
+    const rows = [["Case No","Type","Priority","Status","Filed By","Assigned To","Subject","Date","Description","Pinned"]];
+    list.forEach(c => rows.push([c.caseNo, c.type, c.priority, c.status, c.reporter, c.assignedTo||'', c.involved, c.date, c.description, c.pinned?'Yes':'No']));
+    downloadCSV(rows, `bright-dynasty-${which}-cases.csv`);
+  };
+
+  function downloadCSV(rows, filename){
+    const csv = rows.map(r => r.map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ================= NOTES MODAL =================
+  let currentNotesCaseId = null;
+  window.openNotesModal = function(id){
+    currentNotesCaseId = id;
+    const c = cases.find(x=>x.id===id);
+    if(!c) return;
+    document.getElementById('notesModalTitle').textContent = `Notes — ${c.caseNo}`;
+    renderNotesList(c.notes || []);
+    document.getElementById('noteText').value = '';
+    document.getElementById('noteAuthor').value = (currentUser && (currentUser.displayName || currentUser.email)) || localStorage.getItem('bd_agent_name') || '';
+    document.getElementById('notesModalOverlay').classList.add('active');
+  };
+  window.closeNotesModal = function(){ document.getElementById('notesModalOverlay').classList.remove('active'); currentNotesCaseId = null; };
+  function renderNotesList(notes){
+    const list = document.getElementById('notesList');
+    if(!notes.length){ list.innerHTML = `<div class="note-item">No notes yet. Be the first to add an update.</div>`; return; }
+    const sorted = [...notes].sort((a,b) => new Date(b.ts) - new Date(a.ts));
+    list.innerHTML = sorted.map(n => `
+      <div class="note-item">
+        <div class="note-meta">${esc(n.author) || 'Unknown'} · ${new Date(n.ts).toLocaleString()}</div>
+        ${esc(n.text)}
+      </div>
+    `).join('');
+  }
+  window.submitNote = async function(){
+    if(!currentNotesCaseId) return;
+    const author = document.getElementById('noteAuthor').value.trim() || 'Unknown Agent';
+    const text = document.getElementById('noteText').value.trim();
+    if(!text) return;
+    localStorage.setItem('bd_agent_name', author);
+    const c = cases.find(x=>x.id===currentNotesCaseId);
+    const newNotes = [...(c.notes || []), { author, text, ts: new Date().toISOString() }];
+    try{
+      await updateDoc(doc(db, "cases", currentNotesCaseId), { notes: newNotes });
+      logActivity(`Note added to ${c.caseNo} by ${author}`);
+      document.getElementById('noteText').value = '';
+      renderNotesList(newNotes);
+    }catch(err){ alert("Couldn't add note: " + err.message); }
+  };
+
+  // ================= TABS + MODALS =================
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  tabBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      tabBtns.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      document.getElementById('view-' + btn.dataset.view).classList.add('active');
+    });
+  });
+
+  [ 'agentModalOverlay', 'suspectModalOverlay', 'notesModalOverlay' ].forEach(id=>{
+    document.getElementById(id).addEventListener('click', function(e){
+      if(e.target === this) this.classList.remove('active');
+    });
+  });
+  document.addEventListener('keydown', e=>{
+    if(e.key === 'Escape'){
+      document.getElementById('agentModalOverlay').classList.remove('active');
+      document.getElementById('suspectModalOverlay').classList.remove('active');
+      document.getElementById('notesModalOverlay').classList.remove('active');
+    }
+  });
+
+  // ================= FILE REPORT =================
+  document.getElementById('caseNoPreview').textContent = "CASE #" + genCaseNo();
+
+  document.getElementById('reportForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const status = document.getElementById('submitStatus');
+    const caseNo = genCaseNo();
+
+    const newCase = {
+      caseNo,
+      type: document.getElementById('incidentType').value,
+      priority: document.getElementById('priority').value,
+      involved: document.getElementById('involved').value,
+      assignedTo: document.getElementById('assignedTo').value,
+      reporter: document.getElementById('reporter').value,
+      description: document.getElementById('description').value,
+      evidence: document.getElementById('evidence').value,
+      date: new Date().toISOString().slice(0,10),
+      status: "open",
+      notes: [],
+      autoEscalated: false,
+      pinned: false
+    };
+
+    try{
+      await addDoc(casesCol, newCase);
+      logActivity(`Case filed: ${caseNo} by ${newCase.reporter || 'Unknown'}`);
+      status.textContent = `Case opened: ${caseNo}`;
+      status.className = "submit-status ok";
+      playChime();
+      const keepReporter = document.getElementById('reporter').value;
+      this.reset();
+      document.getElementById('reporter').value = keepReporter;
+      document.getElementById('caseNoPreview').textContent = "CASE #" + genCaseNo();
+
+      if(DISCORD_WEBHOOK_URL){
+        fetch(DISCORD_WEBHOOK_URL, {
+          method:"POST", headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ embeds:[{
+            title: `New Case Opened — ${newCase.caseNo}`, color: 0xd4a017,
+            fields:[
+              { name:"Filed By", value: newCase.reporter || "—", inline:true },
+              { name:"Assigned To", value: newCase.assignedTo || "Unassigned", inline:true },
+              { name:"Priority", value: newCase.priority, inline:true },
+              { name:"Type", value: newCase.type, inline:true },
+              { name:"Subject", value: newCase.involved || "—" },
+              { name:"Details", value: newCase.description || "—" },
+              { name:"Evidence", value: newCase.evidence || "None" },
+            ]
+          }]})
+        }).catch(()=>{});
+      }
+      document.querySelector('[data-view="open"]').click();
+    }catch(err){
+      status.textContent = "Couldn't open case: " + err.message;
+      status.className = "submit-status err";
+    }
+  });
+
+  // ================= LIVE LISTENERS (start only after login) =================
+  function startListeners(){
+    onSnapshot(agentsCol, snap => {
+      agents = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      renderRoster(); renderCases();
+      setSyncPill('ok');
+    }, err => { console.error(err); setSyncPill('error'); });
+
+    onSnapshot(casesCol, snap => {
+      cases = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      renderCases();
+      setSyncPill('ok');
+    }, err => { console.error(err); setSyncPill('error'); });
+
+    onSnapshot(suspectsCol, snap => {
+      suspects = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      renderSuspects(); renderCases();
+      setSyncPill('ok');
+    }, err => { console.error(err); setSyncPill('error'); });
+
+    onSnapshot(query(activityCol, orderBy('ts', 'desc'), limit(50)), snap => {
+      activity = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      renderActivity();
+    }, err => { console.error(err); });
+
+    onSnapshot(caseTypesCol, snap => {
+      const custom = snap.docs.map(d => d.data().name).filter(Boolean);
+      const defaults = ["Rule Violation","Harassment","Cheating / Exploiting","Impersonation","Other"];
+      caseTypes = [...new Set([...defaults.filter(t=>t!=="Other"), ...custom, "Other"])];
+      populateCaseTypeSelect();
+    }, err => { console.error(err); });
+  }
+
+  populateCaseTypeSelect();
+</script>
+</body>
+</html>
